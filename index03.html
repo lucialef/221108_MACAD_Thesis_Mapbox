@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Seasonal City</title>
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v2.9.2/mapbox-gl.js"></script>
+    
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Silkscreen">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link
+      href="https://api.tiles.mapbox.com/mapbox-gl-js/v2.9.2/mapbox-gl.css"
+      rel="stylesheet">
+
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.0.9/mapbox-gl-draw.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.0.9/mapbox-gl-draw.css"
+      type="text/css"
+      />
+
+    <style>
+      body,h2,h3,h4,h5,h6 {font-family: "Roboto", sans-serif}
+      h1,button,input {font-family: "Silkscreen", sans-serif}
+    
+      body {
+        margin: 0;
+        padding: 0;
+        color: black;
+      }
+
+      h1{
+        text-align: center;
+      }
+      
+      .data {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 20%;
+        height: 97%;
+        background-color: rgb(26, 188, 156);
+      }
+
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        width: 80%;
+        height: 97%;
+      }
+
+      .footer {
+        position: fixed;
+        bottom: 0px;
+        width: 100%;
+        height: 3%;
+        z-index: 1;
+        color: rgb(255, 255, 255);
+        font-family: monospace;
+        font-weight: bold;
+        font-size: 8pt;
+        letter-spacing: 1px;
+        line-height: 0.5;
+       }
+
+      #title1 {
+        margin-top: 10px;
+        margin-left: 10px;
+        max-width: 100%;
+        text-align: left;
+        font-size: 36pt;
+        line-height: 0.7;
+        color: white;
+      }
+
+      #title1:hover{
+        color: crimson;
+      }
+
+      #footer {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        /* background-color: crimson; */
+        background-color: #333;
+        box-shadow: 0px 0px 3px 0px rgba(51, 51, 51, 0.5);
+      }
+      
+      li {
+        float: left;
+      }
+  
+      li a {
+          display: block;
+          color: white;
+          text-align: center;
+          padding: 14px 16px;
+          text-decoration: none;
+      }
+
+    </style>
+
+  </head>
+  <body>
+
+    <div class="data">
+        <h1 id="title1">Not </br>
+            all </br>
+            who </br>
+            wander </br>
+            are </br>
+            lost</h1>
+        <div id="geocoder"></div>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="footer">
+        <ul id="footer">
+            <li><a href="#macad">UNRAVELING THE SEASONAL CITY</a></li>
+            <li><a href="#macad">IaaC MaCAD22</a></li>
+            <li><a>Developed by_ Lucía Leva Fuentes</a></li>
+            <li><a>Thesis Advisor_ David A. León</a></li>
+            <li style="float:right"><a href="#github">GitHub</a></li>
+          </ul>
+    </div>
+
+    <script>
+      mapboxgl.accessToken = 'pk.eyJ1IjoibHVjaWFsZXBoIiwiYSI6ImNsOXY4dHd3MzB5YmQzcG1udmRyeHoxaHcifQ.i9KDC2pvpE1frP2f2Hv0sg';
+
+      // BUILD MAP
+      const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/lucialeph/cl9v9cd3s000j15ph9eh9fq1h',
+        center: [-5.97317, 37.38283],
+        zoom: 12
+      });
+
+      // BUILD TREES POPUP
+      map.on('click', (event) => {
+        const features = map.queryRenderedFeatures(event.point, {
+          layers: ['trees']
+        });
+        if (!features.length) {
+          return;
+        }
+        const feature = features[0];
+
+        const popup = new mapboxgl.Popup({ offset: [0, -15] })
+          .setLngLat(feature.geometry.coordinates)
+          .setHTML(
+            `<h1>${feature.properties.Nombre}</h1>`
+          )
+          .addTo(map);
+      });
+
+      const draw = new MapboxDraw({
+        // Instead of showing all the draw tools, show only the line string and delete tools
+        displayControlsDefault: false,
+        controls: {
+          line_string: true,
+          trash: true
+        },
+        // Set the draw mode to draw LineStrings by default
+        defaultMode: 'draw_line_string',
+        styles: [
+          // Set the line style for the user-input coordinates
+          {
+            'id': 'gl-draw-line',
+            'type': 'line',
+            'filter': [
+              'all',
+              ['==', '$type', 'LineString'],
+              ['!=', 'mode', 'static']
+            ],
+            'layout': {
+              'line-cap': 'round',
+              'line-join': 'round'
+            },
+            'paint': {
+              'line-color': '#438EE4',
+              'line-dasharray': [0.2, 2],
+              'line-width': 2,
+              'line-opacity': 0.7
+            }
+          },
+          // Style the vertex point halos
+          {
+            'id': 'gl-draw-polygon-and-line-vertex-halo-active',
+            'type': 'circle',
+            'filter': [
+              'all',
+              ['==', 'meta', 'vertex'],
+              ['==', '$type', 'Point'],
+              ['!=', 'mode', 'static']
+            ],
+            'paint': {
+              'circle-radius': 12,
+              'circle-color': '#FFF'
+            }
+          },
+          // Style the vertex points
+          {
+            'id': 'gl-draw-polygon-and-line-vertex-active',
+            'type': 'circle',
+            'filter': [
+              'all',
+              ['==', 'meta', 'vertex'],
+              ['==', '$type', 'Point'],
+              ['!=', 'mode', 'static']
+            ],
+            'paint': {
+              'circle-radius': 8,
+              'circle-color': '#438EE4'
+            }
+          }
+        ]
+      });
+ 
+      // Add the draw tool to the map
+      map.addControl(draw);
+ 
+      // Add create, update, or delete actions
+      map.on('draw.create', updateRoute);
+      map.on('draw.update', updateRoute);
+      map.on('draw.delete', removeRoute);
+ 
+      // Use the coordinates you just drew to make the Map Matching API request
+      function updateRoute() {
+      removeRoute(); // Overwrite any existing layers
+ 
+      const profile = 'walking'; // Set the profile
+ 
+      // Get the coordinates
+      const data = draw.getAll();
+      const lastFeature = data.features.length - 1;
+      const coords = data.features[lastFeature].geometry.coordinates;
+      // Format the coordinates
+      const newCoords = coords.join(';'); //*****!!!!!!!!
+      // Set the radius for each coordinate pair to 25 meters
+      const radius = coords.map(() => 25);
+      getMatch(newCoords, radius, profile);
+      }
+ 
+      // Make a Map Matching request
+      async function getMatch(coordinates, radius, profile) {
+        // Separate the radiuses with semicolons
+        const radiuses = radius.join(';');
+        // Create the query
+        const query = await fetch(
+          `https://api.mapbox.com/matching/v5/mapbox/${profile}/${coordinates}?geometries=geojson&radiuses=${radiuses}&steps=true&access_token=${mapboxgl.accessToken}`,
+          { method: 'GET' }
+        );
+        const response = await query.json();
+        // Handle errors
+        if (response.code !== 'Ok') {
+          alert(
+            `${response.code} - ${response.message}.\n\nFor more information: https://docs.mapbox.com/api/navigation/map-matching/#map-matching-api-errors`
+          );
+          return;
+        }
+        const coords = response.matchings[0].geometry;
+        // Draw the route on the map
+        addRoute(coords);
+        getInstructions(response.matchings[0]);
+      }
+ 
+      // function getInstructions(data) {
+      //   // Target the sidebar to add the instructions
+      //   const directions = document.getElementById('directions');
+      //   let tripDirections = '';
+      //   // Output the instructions for each step of each leg in the response object
+      //   for (const leg of data.legs) {
+      //     const steps = leg.steps;
+      //     for (const step of steps) {
+      //     tripDirections += `<li>${step.maneuver.instruction}</li>`;
+      //     }
+      //   }
+      //   directions.innerHTML = `<p><strong>Trip duration: ${Math.floor(
+      //     data.duration / 60
+      //   )} min.</strong></p><ol>${tripDirections}</ol>`;
+      // }
+ 
+      // Draw the Map Matching route as a new layer on the map
+      function addRoute(coords) {
+        // If a route is already loaded, remove it
+        if (map.getSource('route')) {
+          map.removeLayer('route');
+          map.removeSource('route');
+        } else {
+          map.addLayer({
+            'id': 'route',
+            'type': 'line',
+            'source': {
+              'type': 'geojson',
+              'data': {
+                'type': 'Feature',
+                'properties': {},
+                'geometry': coords
+              }
+            },
+            'layout': {
+              'line-join': 'round',
+              'line-cap': 'round'
+            },
+            'paint': {
+              'line-color': '#03AA46',
+              'line-width': 8,
+              'line-opacity': 0.8
+            }
+          });
+        }
+      }
+ 
+      // If the user clicks the delete draw button, remove the layer if it exists
+      function removeRoute() {
+        if (!map.getSource('route')) return;
+          map.removeLayer('route');
+          map.removeSource('route');
+      }
+      
+    </script>
+  </body>
+</html>
